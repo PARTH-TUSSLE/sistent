@@ -2,6 +2,8 @@
 version: alpha
 name: Sistent
 description: Open-source dashboard and component-system visual identity with a neutral application shell, teal brand actions, saffron CTAs, and a first-class dark mode.
+target_framework: "@mui/material + React + TypeScript"
+package_source_of_truth: package.json
 colors:
   primary: '#00B39F'
   on-primary: '#FDFDFD'
@@ -22,7 +24,7 @@ colors:
   surface-light-tabs: '#F6F8F8'
   on-surface-light: '#000D12'
   surface-dark-app: '#000D12'
-  surface-dark-card: '#121212'
+  surface-dark-card: '#212121'
   surface-dark-muted: '#15272F'
   surface-dark-tabs: '#1A1A1A'
   on-surface-dark: '#FDFDFD'
@@ -298,94 +300,331 @@ components:
     padding: 4px 8px
 ---
 
-## Overview
+## 1. Overview & Architectural Boundaries
 
-Sistent presents itself as a practical open-source product system for dashboards, admin surfaces, and data-heavy workflows. The visual identity is calm and technical rather than decorative: a cool neutral shell carries the interface, a vivid teal handles primary interaction, saffron is reserved for CTA or status emphasis, and dark mode is treated as a real peer instead of an afterthought.
+Sistent is the design system and UI component library for Layer5 products and open-source applications (such as Meshery). It provides a calm, technical visual identity built around:
+- A cool, restrained neutral application shell.
+- Vivid brand teal (`#00B39F`) for primary actions, navigation indicators, and active cues.
+- Saffron (`#EBC017`) as an intentional CTA and badge accent.
+- A first-class dark mode treated as a peer surface system rather than a naive color inversion.
 
-The design language blends Material UI's structural discipline with a few unmistakable Layer5 signatures: blue-gray gradient chrome, a faint radial wash on cards, accent-tinted hover depth on showcase surfaces, and a teal luminescent tooltip shadow in dark mode. The result feels reliable, community-built, and slightly optimistic without becoming playful or glossy.
+### Document Scope & Separation of Concerns
 
-## Colors
+To avoid contradictory guidance across the repository, documentation responsibilities are strictly separated:
 
-The palette is anchored by restrained neutrals. In light mode, the application canvas is near-white with gentle charcoal steps for borders, tabs, and secondary surfaces. In dark mode, those same layers invert into deep charcoal and blue-black slabs with softened gray dividers instead of pure black-on-black contrast.
+* **`DESIGN.md` (UI & Design Contract)**:
+  * **Owns**: Visual philosophy, semantic design tokens (frontmatter), verified token-to-code bridges, component conventions, interaction states, responsive layouts, evidence-backed accessibility guidance, and UI-specific AI guardrails.
+  * **Strict Non-Goals**: Build tooling, rollup/dts configurations, npm releases, package dependency categorization, multi-repo schema definitions, and git commit signing (DCO).
+* **`AGENTS.md` (Repository & Engineering Contract)**:
+  * **Owns**: Contributor engineering runbooks, build/test gates, declaration bundling troubleshooting, optional peer rules, schema derivation contracts, and DCO requirements.
+  * **Strict Non-Goals**: Visual styling choices, typography variants, component color palettes, and UI layout rules.
+* **`package.json`**:
+  * **Sole Authority** for installed framework and library versions (e.g. `@mui/material`, `react`, `typescript`).
 
-- **Brand teal** is the primary interactive color. Use it for contained buttons, active states, verification cues, and brand-positive emphasis.
-- **Saffron** is a secondary accent. Use it more sparingly for CTAs, official badges, and graphic emphasis so it remains noticeable.
-- **Navigation chrome** is darker and cooler than content surfaces. Even in light mode, nav bars and drawers sit in blue-gray territory rather than white.
-- **Status colors** are intentionally distinct from the brand color so alerts, warnings, and errors remain legible inside data-heavy interfaces.
+---
 
-## Typography
+## 2. The Two-Layer Model: Design Tokens vs Runtime MUI Theme
 
-Sistent's hierarchy is built around **Qanelas Soft Regular** for most UI copy and headings, with **Open Sans** appearing in supporting body and label roles, and **Consolas** reserved for code-styled content. The overall tone is soft enough to feel approachable, but still structured enough for operational interfaces.
+> ### Core Principle: DESIGN TOKENS ≠ MUI THEME API
+> Sistent establishes an explicit two-layer design contract:
+> 1. **Layer 1: Semantic Design Tokens**: Abstract design concepts defined in the YAML frontmatter (`colors.primary`, `spacing.lg`, `rounded.sm`). These define visual relationships, scales, and component compositions across design tools and specifications.
+> 2. **Layer 2: Canonical Runtime Implementation**: How React and TypeScript code consumes those tokens via Material UI (`theme.palette.interactive.primary`, `theme.spacing(2)`, `theme.shape.borderRadius`).
+>
+> **AI Coding Rule**: Never write design tokens as literal runtime theme properties (e.g. do not write `theme.spacing.lg`, `theme.rounded.sm`, or `theme.shadows['card-accent']`). Instead, use the explicit mappings below to translate design tokens into their canonical runtime implementations.
 
-- **Headings** are large and clean, with medium-to-bold weights and compact tracking.
-- **Body copy** uses a generous `1.75rem` line height, which keeps settings screens, tables, and instructional content readable.
-- **Buttons and active labels** lean semi-bold and capitalize words rather than shouting in full uppercase.
-- **Code treatments** are small, utilitarian, and intentionally plain.
+---
 
-On smaller screens, the largest heading sizes step down rather than reflowing into dramatic mobile-specific styles. The system preserves hierarchy, but avoids oversized hero typography.
+## 3. Explicit Design-Token-to-Runtime-Implementation Mappings
 
-## Layout & Spacing
+Every documented implementation path below is verified against current repository source code or explicitly identified as a historical/compatibility reference.
 
-Spacing follows a clear **8px grid**. The most common working values are `16px`, `20px`, and `24px`, with `12px` used for more compact interactive padding and `32px` reserved for larger layout separation.
+### A. Colors & Surface Semantics
 
-The system generally prefers compact, information-dense arrangement over expansive marketing whitespace. That said, it avoids feeling cramped by keeping horizontal padding predictable and by separating structural chrome from content with tonal layers instead of large gutters.
+> **Surface Semantics Rule**: Do not assume `theme.palette.background.card` is the universal token for all surfaces. Sistent distinguishes between application canvases, cards, modal bodies, panels, and data surfaces based on their structural role.
 
-- **Buttons and tabs** commonly use `16px` horizontal padding.
-- **Modal headers** and action bars land on `11px 16px` and `20px 16px` style rhythms.
-- **Panels and cards** stay tidy; they read as tools, not canvas art.
+| Design Token | Design Value (Light / Dark) | Semantic Role | Canonical Implementation Path | Classification | New Code Guidance |
+| :--- | :--- | :--- | :--- | :--- | :--- |
+| `colors.primary` | `#00B39F` / `#00B39F` | Interactive Primary | `theme.palette.interactive.primary` | Canonical Semantic | **Use for all new interactive controls, icons, and active indicators.** |
+| `colors.primary-hover` | `#41CCB3` / `#41CCB3` | Interactive Hover | `theme.palette.interactive.hover` | Canonical Semantic | **Use for hover states of primary interactive controls.** |
+| `colors.primary-pressed`| `#93E6D1` / `#93E6D1` | Interactive Pressed | `theme.palette.interactive.pressed` | Canonical Semantic | **Use for active and pressed control states.** |
+| `colors.secondary` | `#3C494F` / `#B1B9BC` | Secondary Text / Icon | `theme.palette.text.secondary` / `icon.secondary` | Canonical Semantic | **Use for captions, metadata, hints, and passive icons.** |
+| `colors.accent` | `#EBC017` / `#EBC017` | CTA Accent (Saffron) | `theme.palette.background.cta?.default` | Active Component Binding | **Use for high-visibility Call-to-Action buttons.** |
+| `colors.accent-hover` | `#FFEB6B` / `#FFEB6B` | CTA Hover | `theme.palette.background.cta?.hover` | Active Component Binding | **Use for hover states of CTA buttons.** |
+| `colors.navigation-light / dark`| `#252E31` / `#000D12`| Navigation Bar | `theme.palette.navigation.primary` | Canonical Semantic | **Use for application shell navigation bars and side drawers.** |
+| `colors.surface-light / dark-app`| `#FDFDFD` / `#000D12`| Surface Canvas (App) | `theme.palette.surface.primary` | Canonical Semantic | **Use for application screen canvases and modal body containers.** |
+| `colors.surface-light / dark-card`| `#FFFFFF` / `#212121`| Card Container | `theme.palette.background.card` | Active Component Binding | Used for card surfaces and dark-mode table toolbars/headers. |
+| `colors.surface-light / dark-muted`| `#F6F8F8` / `#15272F`| Panel / Data Surface | `theme.palette.background.surfaces` | Active Component Binding | Used for floating panel bodies, sidebars, and light-mode table headers. |
+| `colors.surface-light / dark-tabs`| `#F6F8F8` / `#1A1A1A`| Tabs Background | `theme.palette.background.tabs` | Active Component Binding | Used for segmented tab container bars (`tab.modifier.ts`). |
+| `strokes.light / dark-default`| `#EAEDEE` / `#15272F`| Border Default | `theme.palette.border.default` | Canonical Semantic | **Use for standard card outlines and container dividers.** |
+| `strokes.light / dark-strong`| `#28353A` / `#8D9FA7`| Border Strong | `theme.palette.border.strong` | Canonical Semantic | **Use for emphasized borders and active boundaries.** |
+| `strokes.light / dark-normal`| `#8C999E` / `#3D4F57`| Border Normal | `theme.palette.border.normal` | Canonical Semantic | **Use for intermediate divider contrast.** |
+| `icons.light / dark-primary`| `#15272F` / `#D2D8DA`| Primary Icon Fill | `theme.palette.icon.default` | Canonical Semantic | **Use for standard icons.** |
+| `status-colors.info` | `#2196F3` / `#2196F3` | System Info | `theme.palette.status.info` | Canonical Semantic | **Use for informative alerts and status badges.** |
+| `status-colors.success`| `#206D24` / `#206D24` | System Success | `theme.palette.status.success` | Canonical Semantic | **Use for success states and confirmation badges.** |
+| `status-colors.warning`| `#F0A303` / `#F0A303` | System Warning | `theme.palette.status.warning` | Canonical Semantic | **Use for warnings and caution alerts.** |
+| `status-colors.error` | `#F91313` / `#F91313` | System Error | `theme.palette.status.error` | Canonical Semantic | **Use for errors, alert banners, and destructive actions.** |
+| `gradients.tint-light / dark`| Gradient | Surface Header Tint | `theme.palette.surface.tint` | Canonical Semantic | **Use for modal, drawer, and panel header gradient banners.** |
+| — | — | App Canvas (Legacy) | `theme.palette.background.default` | Legacy / Compatibility | Baseline MUI background; prefer `surface.primary` in new code. |
+| — | — | MUI Primary Main | `theme.palette.primary.main` | Deprecated | Avoid direct theme path in new code; pass `color="primary"` to Sistent components. |
+| — | — | Text Brand | `theme.palette.text.brand` | Deprecated | Avoid in new code; use `theme.palette.interactive.primary`. |
 
-## Elevation & Depth
+---
 
-Depth in Sistent is subtle. Most surfaces separate through **tone**, **border**, and **surface step**, not through large shadows. This keeps tables, cards, and forms feeling crisp and controlled.
+### B. Spacing: Semantic Tokens vs Functional Invocation
 
-- **Standard cards** use a very faint radial wash rather than dramatic dropshadow.
-- **Interactive showcase cards** lift slightly on hover and gain a soft shadow or teal-tinted accent shadow.
-- **Floating panels** rely on semi-opaque blurred surfaces plus a modest `0 4px 16px` shadow.
-- **Tooltips** are the most expressive surface in the system: neutral shadow in light mode, teal glow in dark mode.
+> **AI Rule**: `spacing.*` tokens define the design grid rhythm. At runtime, the MUI theme implements this via an invocable function `theme.spacing(factor)`. Never write `theme.spacing.base` or `theme.spacing.lg` in code.
 
-When elevation appears, it should feel functional and technical, not plush.
+| Design Token | Design Value | Canonical Runtime Implementation | Usage Context |
+| :--- | :--- | :--- | :--- |
+| `spacing.xxs` | `2px` | `theme.spacing(0.25)` or `2px` literal | Micro gaps, border adjustments |
+| `spacing.xs` | `4px` | `theme.spacing(0.5)` | Micro gaps, tight chip padding |
+| `spacing.sm` / `spacing.base` | `8px` | `theme.spacing(1)` | Base element separation |
+| `spacing.md` | `12px` | `theme.spacing(1.5)` | Compact card gutters, internal control padding |
+| `spacing.lg` | `16px` | `theme.spacing(2)` | Standard container padding, button horizontal padding |
+| `spacing.xl` | `20px` | `theme.spacing(2.5)` | Modal and panel padding |
+| `spacing.xxl` | `24px` | `theme.spacing(3)` | Section separation |
+| `spacing.xxxl` | `32px` | `theme.spacing(4)` | Major layout gutters |
 
-## Shapes
+---
 
-The shape language is mostly rectangular with measured softening. The default rhythm still feels MUI-like: many base components sit at a `4px` radius, while a few custom shells push slightly further.
+### C. Border Radii: Semantic Tokens vs Theme Shapes & Conventions
 
-- **Default controls and cards:** `4px`
-- **Modal wrappers and gradient headers:** `5px`
-- **Floating panels and image wells:** `8px`
-- **Feature and catalog cards:** `15px` to `16px`
-- **Micro-controls like checkboxes:** `2px`
+> **AI Rule**: Sistent defines a single formal theme token: `theme.shape.borderRadius` (`4px`). Other radii in the `rounded.*` token scale represent component-level CSS conventions. Sistent does not define a `theme.rounded` object.
 
-Use larger radii as a signal that a surface is more editorial, showcase-oriented, or independently draggable. Do not round everything equally.
+| Design Token | Design Value | Canonical Implementation Mechanism | Component Conventions |
+| :--- | :--- | :--- | :--- |
+| `rounded.xs` | `2px` | CSS literal (`2px`) | Micro controls (checkboxes, inner tags) |
+| `rounded.sm` | `4px` | `theme.shape.borderRadius` | Standard controls (Buttons, TextFields, base Cards) |
+| `rounded.md` | `5px` | CSS literal (`5px` / `0.5rem`) | Modal dialog wrappers, header caps |
+| `rounded.lg` | `8px` | CSS literal (`8px` / `0.5rem`) | Modal dialog containers, floating panels |
+| `rounded.xl` | `15px` | CSS literal (`15px`) | Featured card variants |
+| `rounded.xxl` | `16px` | CSS literal (`16px`) | Catalog showcase cards |
+| `rounded.full` | `9999px` | CSS literal (`9999px`) | Badges, rounded pills, avatars |
 
-## Components
+---
 
-### Buttons
+### D. Typography System
 
-Contained buttons are solid teal with white text and semi-bold labels. Outlined buttons are intentionally spare: neutral strokes, transparent fill, and color that adapts cleanly across light and dark surfaces.
+All 10 custom variants are registered in `MuiTypography` via `src/theme/typography.ts`. Consumer code must use these named variants rather than declaring arbitrary font styles:
 
-### Tabs
+| Design Token | Typography Spec | Canonical Runtime Usage | Responsive Behavior (`down('sm')`) | Primary Role |
+| :--- | :--- | :--- | :--- | :--- |
+| `typography.textH1Bold` | `3.25rem` / `4rem`, 700 | `<Typography variant="textH1Bold">` | Scales to `2rem` / `2.5rem` | Top-level screen headers |
+| `typography.textH2Medium` | `2rem` / `2.5rem`, 500 | `<Typography variant="textH2Medium">` | Scales to `1.5rem` / `2.25rem` | Primary section headers |
+| `typography.textH3Medium` | `1.5rem` / `2.25rem`, 500 | `<Typography variant="textH3Medium">` | Scales to `1rem` / `1.75rem` (700) | Card & modal titles |
+| `typography.textB1Regular` | `1rem` / `1.75rem`, 400 | `<Typography variant="textB1Regular">` | Preserves `1rem` / `1.75rem` | Primary UI & body copy |
+| `typography.textB2SemiBold`| `1rem` / `1.75rem`, 600, `capitalize` | `<Typography variant="textB2SemiBold">` | Preserves `1rem` / `1.75rem` | Action labels, active tab titles |
+| `typography.textB3Regular` | `0.875rem` / `1.5rem`, 400 | `<Typography variant="textB3Regular">` | Fixed | Supporting labels, hints |
+| `typography.textL1Bold` | `0.75rem` / `1rem`, 700 | `<Typography variant="textL1Bold">` | Fixed | Ribbon badges, small chips |
+| `typography.textL2Regular` | `0.75rem` / `1.5rem`, 400 | `<Typography variant="textL2Regular">` | Fixed | Secondary metadata, captions |
+| `typography.textC1Regular` | `0.75rem` / `1.5rem`, 400 | `<Typography variant="textC1Regular">` | Fixed | Compact code blocks, UUIDs |
+| `typography.textC2Regular` | `1rem` / `1.75rem`, 400 | `<Typography variant="textC2Regular">` | Fixed | Standard monospace text |
 
-Tabs use flat segmented surfaces rather than pills. The selected tab sits on a dedicated tab background and is reinforced by a brand-colored indicator, which keeps navigation clear without excessive ornament.
+---
 
-### Inputs and Checks
+### E. Shadows, Elevation & Depth
 
-Text inputs are understated. Their identity comes mostly from border treatment and focus color, not from filled backgrounds. Checkboxes are squared-off and compact, reinforcing the design system's utilitarian feel.
+* **Tooltip Elevation**: Encapsulated in `src/theme/components/tooltip.modifier.ts`. Automatically renders neutral shadow in light mode and a dual-tone teal luminescent glow in dark mode.
+* **Card Surface Depth**: Encapsulated via the subtle radial wash in `src/theme/components/card.modifier.ts`.
+* **Floating Panels**: Composed using backdrop blur: `boxShadow: 0 4px 16px ${theme.palette.background.blur?.light}` (`src/custom/Panel/style.tsx`).
+* **Showcase Cards**: Accent shadow: `boxShadow: 2px 2px 3px 0px ${theme.palette.background.brand?.default}` (`src/custom/CatalogCard/style.tsx`).
+* **Negative Constraint**: `theme.shadows` is a standard MUI 25-element tuple. Named keys like `theme.shadows['card-accent']` or `theme.elevation` do not exist.
 
-### Cards, Tables, and Panels
+---
 
-Standard cards and data tables stay quiet, bright, and neutral in light mode, then shift to charcoal slabs in dark mode. Floating panels and modal chrome are where the system becomes more expressive: blurred backgrounds, cool blue-gray gradients, and stronger contrast between header, body, and action areas.
+## 4. Component Usage & Import Conventions
 
-### Catalog and Learning Surfaces
+### Import Precedence Rule
+> **"Prefer `@sistent/sistent` when a Sistent abstraction exists. Use `@mui/material` when no equivalent exists or when implementing Sistent itself."**
 
-The more editorial custom components introduce a bit more motion and softness: slightly larger radii, hover lift, accent shadows, and corner ribbons for classification. These are still grounded in the same teal-gray palette, so they feel related to the core admin surfaces.
+* **Base Controls**: Always import from `@sistent/sistent`:
+  `Button`, `Card`, `Checkbox`, `Dialog`, `IconButton`, `Select`, `Tab`, `Tabs`, `TextField`, `Tooltip`, `Typography`.
+* **Custom Components**: Always import from `@sistent/sistent`:
+  `ActionButton`, `CustomTooltip`, `Modal`, `Panel`, `ResponsiveDataTable`, `SearchBar`, `UniversalFilter`.
+* **MUI Fallbacks**: Permitted only when building internal Sistent primitives or when no Sistent wrapper exists.
 
-## Do's and Don'ts
+---
 
-- **Do** keep teal as the default primary interaction color.
-- **Do** reserve gradients for modal headers, panel chrome, and other structural framing surfaces.
-- **Do** prefer tonal layering, border contrast, and subtle depth before adding large shadows.
-- **Do** treat dark mode as a fully supported surface system, not a simple inversion.
-- **Don't** flood content areas with saturated fills.
-- **Don't** overuse large radii on utilitarian controls.
-- **Don't** replace neutral text with accent colors unless the content is genuinely interactive or status-bearing.
-- **Don't** make tables, forms, or list rows feel decorative; Sistent works best when dense interfaces stay disciplined.
+## 5. Interaction States Matrix
+
+Interaction states are derived from active Sistent component implementations and theme modifiers (`button.modifier.ts`, `tab.modifier.ts`, `input.modifier.ts`):
+
+| Interaction State | Primary Contained Control | Outlined Control | Surface / Container | Rule Status |
+| :--- | :--- | :--- | :--- | :--- |
+| **Default** | `theme.palette.interactive.primary` | Transparent background, `border.default` | Canonical surface token (`surface.primary`, `background.card`) | Canonical Design Rule |
+| **Hover** | `theme.palette.interactive.hover` (`#41CCB3`) | `theme.palette.background.hover` | `theme.palette.background.hover` | Canonical Design Rule |
+| **Pressed** | `theme.palette.interactive.pressed` (`#93E6D1`) | `theme.palette.interactive.pressed` tint | Stepped surface depth | Canonical Design Rule |
+| **Focus-Visible** | Distinct focus outline: `theme.palette.border.brand` | Outline: `theme.palette.border.brand` | Outline: `theme.palette.border.brand` | Canonical Design Rule |
+| **Disabled** | `theme.palette.interactive.disabled`, text `disabled` | Stroke `theme.palette.text.disabled` | N/A | Canonical Design Rule |
+| **Loading** | Spinner / skeleton indicator; interactions inert | Inherits disabled state modifiers | Loading overlay / skeleton | Implementation-Specific |
+| **Selected / Active** | Active tab indicator / contained toggle | `border.brand` with subtle background tint | Component-specific active fill | Implementation-Specific |
+| **Error** | Background: `theme.palette.background.error?.default`, text via `getContrastText()` | Border: `theme.palette.status.error` | Border: `theme.palette.status.error` | Canonical Design Rule |
+| **Success / Warning** | Component-specific status badge / icon | Border / text using status token | Background / border using status token | Implementation-Specific |
+
+---
+
+## 6. Authorization & Permissions
+
+### Permission Rule
+> **"When an action is authorization-controlled, use the existing Sistent permission mechanism and provide the appropriate `permissionKey`. Do not invent local permission logic."**
+
+* Built-in native support exists on: `Button`, `IconButton`, `MenuItem`, `ListItem`, and `ListItemButton`.
+* If unauthorized, the component automatically disables itself and shows a badge tooltip (`permissionAction="showShield"`, default) or renders nothing (`permissionAction="hide"`).
+* **Applicability Scope**: Actions that are not authorization-controlled and standard informational triggers do **not** require `permissionKey`. The optional `permissionKey` prop is strictly for protected operations.
+* Arbitrary custom triggers must be wrapped in `<PermissionShield permissionKey={key}>`.
+
+---
+
+## 7. Responsive Behavior & Accessibility (a11y) Guidance
+
+* **Breakpoints**: Standard MUI breakpoints (`xs: 0`, `sm: 600px`, `md: 900px`, `lg: 1200px`, `xl: 1536px`).
+* **Header Auto-Scaling**: `textH1Bold`, `textH2Medium`, and `textH3Medium` automatically scale down below the `sm` breakpoint via `src/theme/typography.ts`.
+* **Dynamic Contrast & Readability**:
+  * **Mechanism**: Use `readableTextColor(bg)` from `src/theme/theme.ts` when placing text over dynamic brand/custom background fills to automatically select high-contrast ink (`charcoal[10]` vs `charcoal[100]`).
+  * **Design Guidance**: Aim for 4.5:1 contrast on standard text and 3:1 on large text/icons against their immediate surface.
+  * **Enforcement Status**: Contrast is guided by theme tokens and helper utilities (`readableTextColor`), but is not enforced by a global automated linting/test suite across every component.
+* **Label Capitalization**: Action labels use `textTransform: 'capitalize'` built into `textB2SemiBold`.
+* **Semantic ARIA**: Icon-only buttons must supply descriptive `aria-label` and `Tooltip`.
+
+---
+
+## 8. Canonical Code Recipes
+
+All code recipes below adhere strictly to Sistent component conventions, canonical semantic tokens, accessibility guidelines, and AI guardrails:
+
+### Recipe 1: Container Surface with Light/Dark Support
+```tsx
+import React from 'react';
+import { styled, Box, Typography } from '@sistent/sistent';
+
+const CardContainer = styled(Box)(({ theme }) => ({
+  backgroundColor: theme.palette.background.card,
+  color: theme.palette.text.default,
+  border: `1px solid ${theme.palette.border.default}`,
+  borderRadius: theme.shape.borderRadius,
+  padding: theme.spacing(2),
+}));
+
+export const CustomCard: React.FC<{ title: string; children: React.ReactNode }> = ({ title, children }) => (
+  <CardContainer>
+    <Typography variant="textH3Medium" component="h3">
+      {title}
+    </Typography>
+    <Box sx={{ marginTop: (theme) => theme.spacing(1.5) }}>
+      {children}
+    </Box>
+  </CardContainer>
+);
+```
+
+### Recipe 2: Authorization-Controlled Action Button
+
+> **Note**: This pattern applies strictly to actions that are actually authorization-controlled. The optional `permissionKey` must not be interpreted as a requirement for every button or action in the system; standard actions and informational triggers should omit `permissionKey`.
+
+```tsx
+import React from 'react';
+import { Button } from '@sistent/sistent';
+import type { Key } from '@meshery/schemas/permissions';
+
+interface ActionProps {
+  label: string;
+  onClick: () => void;
+  permissionKey?: Key;
+}
+
+export const ActionButton: React.FC<ActionProps> = ({ label, onClick, permissionKey }) => (
+  <Button
+    variant="contained"
+    color="primary"
+    onClick={onClick}
+    permissionKey={permissionKey}
+    permissionAction="showShield"
+  >
+    {label}
+  </Button>
+);
+```
+
+### Recipe 3: Modal Dialog with Sistent Gradient Header
+```tsx
+import React from 'react';
+import { styled, Dialog, DialogContent, Box, Typography } from '@sistent/sistent';
+
+const ModalHeader = styled(Box)(({ theme }) => ({
+  background: theme.palette.surface.tint,
+  color: theme.palette.text.constant?.white,
+  padding: theme.spacing(2),
+  display: 'flex',
+  justifyContent: 'space-between',
+  alignItems: 'center',
+}));
+
+const ModalBody = styled(DialogContent)(({ theme }) => ({
+  backgroundColor: theme.palette.surface.primary,
+  padding: theme.spacing(2.5),
+}));
+
+export const SistentModal: React.FC<{
+  open: boolean;
+  title: string;
+  onClose: () => void;
+  children: React.ReactNode;
+}> = ({ open, title, onClose, children }) => (
+  <Dialog open={open} onClose={onClose} PaperProps={{ sx: { borderRadius: '8px', overflow: 'hidden' } }}>
+    <ModalHeader>
+      <Typography variant="textH3Medium">{title}</Typography>
+    </ModalHeader>
+    <ModalBody>
+      {children}
+    </ModalBody>
+  </Dialog>
+);
+```
+
+---
+
+## 9. AI Coding Guardrails (UI & Styling Specific)
+
+1. **Design Tokens ≠ Runtime Theme API**:
+   > Translate semantic tokens into canonical runtime calls (`theme.spacing(2)`, `theme.shape.borderRadius`). Never write `theme.spacing.lg` or `theme.rounded.sm`.
+2. **Color Literal Rule**:
+   > Consumer/UI code must not introduce new raw color literals when an existing semantic Sistent token applies. Theme source and token definitions are exempt.
+3. **Spacing & Shape Token Rule**:
+   > Consumer/UI code must use `theme.spacing(n)` for element layout and gutters. Do not invent arbitrary inline pixel offsets when an 8px grid factor satisfies the requirement.
+4. **Component Import Rule**:
+   > Prefer `@sistent/sistent` when a Sistent abstraction exists. Use `@mui/material` when no equivalent exists or when implementing Sistent itself.
+5. **Permission Rule**:
+   > When an action is authorization-controlled, use the existing Sistent permission mechanism and provide the appropriate `permissionKey`. Do not invent local permission logic.
+6. **No Manual Dark-Mode Forking**:
+   > Avoid manual conditionals like `theme.palette.mode === 'dark' ? '#212121' : '#fff'`. Use semantic tokens (`theme.palette.background.card`, `theme.palette.surface.primary`, `theme.palette.text.default`) that resolve automatically.
+7. **Preserve Typography Variants**:
+   > Use `<Typography variant="textH1Bold">` through `<Typography variant="textC2Regular">` rather than ad-hoc inline font declarations.
+
+---
+
+## 10. Documentation / Implementation Drift Protocol
+
+When `DESIGN.md` and repository source code disagree:
+1. **Do not silently change the design contract.**
+2. **Determine discrepancy classification**:
+   * **Documentation Drift**: The source implementation was updated intentionally, but `DESIGN.md` was not updated to match (e.g. `surface-dark-card` frontmatter was `#121212` vs code `#212121`).
+   * **Implementation Drift**: A component diverges from established design tokens due to an accidental or ad-hoc local override.
+   * **Intentional Legacy / Compatibility Behavior**: An older token path maintained to avoid breaking consumer downstream imports (e.g. `background.default`).
+   * **Intentional Exception**: A component has a specialized visual requirement that intentionally diverges from the standard token.
+3. **Record the discrepancy in the audit log.**
+4. **Only change the design contract when there is an explicit design-system decision to do so.**
+5. **Do not make unrelated design changes during AI-context work.**
+
+---
+
+## 11. Do's and Don'ts
+
+* **Do** keep teal (`#00B39F`) as the default primary interaction color.
+* **Do** reserve gradients (`surface.tint`) for modal headers, drawer banners, and structural framing.
+* **Do** prefer tonal layering, border contrast, and subtle surface depth before adding large shadows.
+* **Do** treat dark mode as a fully supported surface system, not a simple color inversion.
+* **Do** use `theme.spacing(factor)` for all layout margins and paddings.
+* **Don't** flood content areas with saturated fills.
+* **Don't** overuse large radii on utilitarian controls; reserve `16px` for showcase cards.
+* **Don't** replace neutral text with accent colors unless the content is genuinely interactive or status-bearing.
+* **Don't** write phantom theme paths like `theme.spacing.lg` or `theme.rounded.sm`.
