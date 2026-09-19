@@ -427,7 +427,7 @@ Sistent defines a cohesive scale of border radii for controls and containers. In
 | Formal Design Token | Design Value (Spec) | Implementation Mapping         | Implementation Layer            | Component Context / Evidence                                                                                                |
 | :------------------ | :------------------ | :----------------------------- | :------------------------------ | :-------------------------------------------------------------------------------------------------------------------------- |
 | `rounded.xs`        | `2px`               | CSS literal (`2px`)            | Observed Implementation Literal | Micro controls (`src/icons/Checkbox/CheckboxIcon.tsx:28`)                                                                   |
-| `rounded.sm`        | `4px`               | `theme.shape.borderRadius`     | Canonical Theme Path            | Standard controls: Buttons, TextFields, base Cards (`src/theme/theme.ts`)                                                   |
+| `rounded.sm`        | `4px`               | `theme.shape.borderRadius`     | Canonical Theme Path            | Standard controls: Buttons, TextFields, base Cards (MUI default; not overridden in `src/theme/theme.ts`)                    |
 | `rounded.md`        | `5px`               | CSS literal (`5px`)            | Observed Implementation Literal | Modal card headers & wrappers (`src/custom/ModalCard/style.tsx`, `src/custom/Dialog/style.tsx`)                             |
 | `rounded.lg`        | `8px`               | CSS literal (`8px` / `0.5rem`) | Observed Implementation Literal | Modal dialog Paper (`src/custom/Modal/index.tsx`), floating panels (`src/custom/Panel/style.tsx`)                           |
 | `rounded.xl`        | `15px`              | CSS literal (`15px`)           | Observed Implementation Literal | Featured card variants & image wells (`src/custom/CustomImage/CustomImage.tsx`)                                             |
@@ -527,7 +527,7 @@ Component-specific behaviors are never promoted to Canonical Design Rules withou
   - **Enforcement Status**: Contrast is guided by theme tokens and helper utilities (`readableTextColor`), but is not enforced by a global automated linting/test suite across every component.
 - **Label Capitalization**: Action labels use `textTransform: 'capitalize'` built into `textB2SemiBold`.
 - **Semantic ARIA**: Icon-only buttons must supply descriptive `aria-label` and `Tooltip`.
-- **Modal Dialog Accessibility (`aria-labelledby`)**: Sistent's `Modal` component (`src/custom/Modal/index.tsx`) hardcodes `aria-labelledby="alert-dialog-slide-title"` and `aria-describedby="alert-dialog-slide-description"` on the underlying dialog, while its internal title element does not currently forward an `id`. To avoid duplicate-ID collisions across multiple dialog instances in the DOM, adding per-instance `titleId` / `descriptionId` prop forwarding (e.g. via `useId`) is tracked as an upcoming component enhancement.
+- **Modal Dialog Accessibility (`aria-labelledby`)**: Sistent's `Modal` component (`src/custom/Modal/index.tsx`) hardcodes `aria-labelledby="alert-dialog-slide-title"` and `aria-describedby="alert-dialog-slide-description"` on the underlying dialog, while its internal title element does not currently forward an `id`. To avoid duplicate-ID collisions across multiple dialog instances in the DOM, adding per-instance `titleId` / `descriptionId` prop forwarding (e.g. via `useId`) is not yet tracked as a dedicated issue.
 
 ---
 
