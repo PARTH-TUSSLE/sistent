@@ -377,7 +377,7 @@ Each table below establishes the explicit bridge from the **Formal Design Token*
 | ↳ _(semantic CTA hover consumer)_   | `#FFEB6B` / `#FFEB6B`       | Call-to-Action Hover            | `theme.palette.background.cta?.hover`   | Active Component Convention     | Hover state for CTA buttons (`src/theme/palette.ts`)                                                                                                                                                                                                                                                                                                                                                              |
 | `colors.navigation-light / dark`    | `#252E31` / `#000D12`       | Navigation Bar                  | `theme.palette.navigation.primary`      | Canonical Theme Path            | Application shell navigation bars and side drawers (`src/theme/palette.ts`)                                                                                                                                                                                                                                                                                                                                       |
 | `colors.surface-light / dark-app`   | `#FDFDFD` / `#000D12`       | Surface Canvas (App)            | `theme.palette.surface.primary`         | Canonical Theme Path            | Application screen canvases and modal containers (`src/theme/palette.ts`)                                                                                                                                                                                                                                                                                                                                         |
-| `colors.surface-light / dark-card`  | `#FDFDFD` / `#212121`       | Card / Table Container Binding  | `theme.palette.background.card`         | Active Component Binding        | Canonical token binding for card widgets, tables, and container surfaces (`src/custom/DataTableToolbar/DataTableToolbar.tsx`, `src/custom/DashboardWidgets/RecentDesignWidget.tsx`, `src/theme/components/table.modifier.ts`). Card backgrounds map strictly to `theme.palette.background.card` to maintain visual consistency across light and dark modes.                                                       |
+| `colors.surface-light / dark-card`  | `#FDFDFD` / `#212121`       | Card / Table Container Binding  | `theme.palette.background.card`         | Active Component Convention     | Canonical token binding for card widgets, tables, and container surfaces (`src/custom/DataTableToolbar/DataTableToolbar.tsx`, `src/custom/DashboardWidgets/RecentDesignWidget.tsx`, `src/theme/components/table.modifier.ts`). Card backgrounds map strictly to `theme.palette.background.card` to maintain visual consistency across light and dark modes.                                                       |
 | `colors.surface-light / dark-muted` | `#F6F8F8` / `#15272F`       | Panel / Data Surface            | `theme.palette.background.surfaces`     | Active Component Convention     | Panel bodies (`src/custom/Panel/style.tsx`), table headers (`src/theme/components/table.modifier.ts`, `src/theme/palette.ts`)                                                                                                                                                                                                                                                                                     |
 | `colors.surface-light / dark-tabs`  | `#F6F8F8` / `#1A1A1A`       | Tabs Background                 | `theme.palette.background.tabs`         | Active Component Convention     | Segmented tab container bars (`src/theme/components/tab.modifier.ts`, `src/theme/palette.ts`)                                                                                                                                                                                                                                                                                                                     |
 | `strokes.light / dark-default`      | `#EAEDEE` / `#15272F`       | Border Default                  | `theme.palette.border.default`          | Canonical Theme Path            | Standard card borders and dividers (`src/theme/palette.ts`)                                                                                                                                                                                                                                                                                                                                                       |
@@ -510,8 +510,9 @@ Component-specific behaviors are never promoted to Canonical Design Rules withou
 
 > **"When an action is authorization-controlled, use the existing Sistent permission mechanism and provide the appropriate `permissionKey`. Do not invent local permission logic."**
 
+- **Provider Requirement**: Permission gating is evaluated by `useHasPermission`. The application or view tree must be wrapped in `<PermissionProvider>`. Without an enclosing provider, `useHasPermission` defaults to `true` (unconditional access), meaning permissions are not evaluated and controls remain fully enabled.
 - Built-in native support exists on: `Button`, `IconButton`, `MenuItem`, `ListItem`, and `ListItemButton`.
-- If unauthorized, the component automatically disables itself and shows a badge tooltip (`permissionAction="showShield"`, default) or renders nothing (`permissionAction="hide"`).
+- If unauthorized (with `<PermissionProvider>` mounted), the component automatically disables itself and shows a badge tooltip (`permissionAction="showShield"`, default) or renders nothing (`permissionAction="hide"`).
 - **Applicability Scope**: Actions that are not authorization-controlled and standard informational triggers do **not** require `permissionKey`. The optional `permissionKey` prop is strictly for protected operations.
 - Arbitrary custom triggers must be wrapped in `<PermissionShield permissionKey={key}>`.
 
@@ -527,7 +528,7 @@ Component-specific behaviors are never promoted to Canonical Design Rules withou
   - **Enforcement Status**: Contrast is guided by theme tokens and helper utilities (`readableTextColor`), but is not enforced by a global automated linting/test suite across every component.
 - **Label Capitalization**: Action labels use `textTransform: 'capitalize'` built into `textB2SemiBold`.
 - **Semantic ARIA**: Icon-only buttons must supply descriptive `aria-label` and `Tooltip`.
-- **Modal Dialog Accessibility (`aria-labelledby`)**: Sistent's `Modal` component (`src/custom/Modal/index.tsx`) hardcodes `aria-labelledby="alert-dialog-slide-title"` and `aria-describedby="alert-dialog-slide-description"` on the underlying dialog, while its internal title element does not currently forward an `id`. To avoid duplicate-ID collisions across multiple dialog instances in the DOM, adding per-instance `titleId` / `descriptionId` prop forwarding (e.g. via `useId`) is not yet tracked as a dedicated issue.
+- **Modal Dialog Accessibility (`aria-labelledby`)**: Sistent's `Modal` component (`src/custom/Modal/index.tsx`) hardcodes `aria-labelledby="alert-dialog-slide-title"` and `aria-describedby="alert-dialog-slide-description"` on the underlying dialog, while its internal title element does not currently forward an `id`. To avoid duplicate-ID collisions in the DOM accessibility tree, consumers should conditionally mount dialog instances (`{isOpen && <Modal ... />}`) rather than keeping multiple hidden instances mounted simultaneously.
 
 ---
 
@@ -564,19 +565,23 @@ export const ContentCard: React.FC<{ title: string; children: React.ReactNode }>
 
 ### Recipe 2: Authorization-Controlled Action Button
 
-_Verified export_: `Button` from `@sistent/sistent` (`src/base/Button/Button.tsx`).
+_Verified export_: `Button`, `PermissionKeySpec` from `@sistent/sistent` (`src/base/Button/Button.tsx`, `src/custom/PermissionProvider.tsx`).
 
 > **Note**: This pattern applies strictly to actions that are authorization-controlled and require an explicit permission gate. Standard actions and informational triggers should omit `permissionKey`.
+>
+> **Provider Requirement**: The enclosing application or view tree must be wrapped in `<PermissionProvider>` for `permissionKey` gating to take effect. If no provider is mounted, `useHasPermission` defaults to `true` and the button will remain enabled.
 
 ```tsx
 import React from 'react';
-import { Button } from '@sistent/sistent';
-import type { Key } from '@meshery/schemas/permissions';
+import { Button, type PermissionKeySpec } from '@sistent/sistent';
 
 interface ProtectedActionProps {
   label: string;
   onClick: () => void;
-  permissionKey: Key;
+  /**
+   * Required permission: either a single `Key` or a composite key set (`{ anyOf: Key[] }` or `{ allOf: Key[] }`).
+   */
+  permissionKey: PermissionKeySpec;
 }
 
 export const ProtectedActionButton: React.FC<ProtectedActionProps> = ({
